@@ -1,6 +1,9 @@
 import sys
 import unittest
 import binascii
+import base64
+
+import regex as re
 
 import iocextract
 
@@ -40,99 +43,99 @@ class TestExtractors(unittest.TestCase):
     def test_md5_extract(self):
         content = '68b329da9893e34099c7d8ad5cb9c940'
 
-        self.assertEquals(list(iocextract.extract_md5_hashes(content))[0], content)
-        self.assertEquals(list(iocextract.extract_md5_hashes(_wrap_spaces(content)))[0], content)
-        self.assertEquals(list(iocextract.extract_md5_hashes(_wrap_tabs(content)))[0], content)
-        self.assertEquals(list(iocextract.extract_md5_hashes(_wrap_newlines(content)))[0], content)
-        self.assertEquals(list(iocextract.extract_md5_hashes(_wrap_words(content)))[0], content)
-        self.assertEquals(list(iocextract.extract_md5_hashes(_wrap_nonwords(content)))[0], content)
+        self.assertEqual(list(iocextract.extract_md5_hashes(content))[0], content)
+        self.assertEqual(list(iocextract.extract_md5_hashes(_wrap_spaces(content)))[0], content)
+        self.assertEqual(list(iocextract.extract_md5_hashes(_wrap_tabs(content)))[0], content)
+        self.assertEqual(list(iocextract.extract_md5_hashes(_wrap_newlines(content)))[0], content)
+        self.assertEqual(list(iocextract.extract_md5_hashes(_wrap_words(content)))[0], content)
+        self.assertEqual(list(iocextract.extract_md5_hashes(_wrap_nonwords(content)))[0], content)
 
     def test_sha1_extract(self):
         content = 'adc83b19e793491b1c6ea0fd8b46cd9f32e592fc'
 
-        self.assertEquals(list(iocextract.extract_sha1_hashes(content))[0], content)
-        self.assertEquals(list(iocextract.extract_sha1_hashes(_wrap_spaces(content)))[0], content)
-        self.assertEquals(list(iocextract.extract_sha1_hashes(_wrap_tabs(content)))[0], content)
-        self.assertEquals(list(iocextract.extract_sha1_hashes(_wrap_newlines(content)))[0], content)
-        self.assertEquals(list(iocextract.extract_sha1_hashes(_wrap_words(content)))[0], content)
-        self.assertEquals(list(iocextract.extract_sha1_hashes(_wrap_nonwords(content)))[0], content)
+        self.assertEqual(list(iocextract.extract_sha1_hashes(content))[0], content)
+        self.assertEqual(list(iocextract.extract_sha1_hashes(_wrap_spaces(content)))[0], content)
+        self.assertEqual(list(iocextract.extract_sha1_hashes(_wrap_tabs(content)))[0], content)
+        self.assertEqual(list(iocextract.extract_sha1_hashes(_wrap_newlines(content)))[0], content)
+        self.assertEqual(list(iocextract.extract_sha1_hashes(_wrap_words(content)))[0], content)
+        self.assertEqual(list(iocextract.extract_sha1_hashes(_wrap_nonwords(content)))[0], content)
 
     def test_sha256_extract(self):
         content = '01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b'
 
-        self.assertEquals(list(iocextract.extract_sha256_hashes(content))[0], content)
-        self.assertEquals(list(iocextract.extract_sha256_hashes(_wrap_spaces(content)))[0], content)
-        self.assertEquals(list(iocextract.extract_sha256_hashes(_wrap_tabs(content)))[0], content)
-        self.assertEquals(list(iocextract.extract_sha256_hashes(_wrap_newlines(content)))[0], content)
-        self.assertEquals(list(iocextract.extract_sha256_hashes(_wrap_words(content)))[0], content)
-        self.assertEquals(list(iocextract.extract_sha256_hashes(_wrap_nonwords(content)))[0], content)
+        self.assertEqual(list(iocextract.extract_sha256_hashes(content))[0], content)
+        self.assertEqual(list(iocextract.extract_sha256_hashes(_wrap_spaces(content)))[0], content)
+        self.assertEqual(list(iocextract.extract_sha256_hashes(_wrap_tabs(content)))[0], content)
+        self.assertEqual(list(iocextract.extract_sha256_hashes(_wrap_newlines(content)))[0], content)
+        self.assertEqual(list(iocextract.extract_sha256_hashes(_wrap_words(content)))[0], content)
+        self.assertEqual(list(iocextract.extract_sha256_hashes(_wrap_nonwords(content)))[0], content)
 
     def test_sha512_extract(self):
         content = 'be688838ca8686e5c90689bf2ab585cef1137c999b48c70b92f67a5c34dc15697b5d11c982ed6d71be1e1e7f7b4e0733884aa97c3f7a339a8ed03577cf74be09'
 
-        self.assertEquals(list(iocextract.extract_sha512_hashes(content))[0], content)
-        self.assertEquals(list(iocextract.extract_sha512_hashes(_wrap_spaces(content)))[0], content)
-        self.assertEquals(list(iocextract.extract_sha512_hashes(_wrap_tabs(content)))[0], content)
-        self.assertEquals(list(iocextract.extract_sha512_hashes(_wrap_newlines(content)))[0], content)
-        self.assertEquals(list(iocextract.extract_sha512_hashes(_wrap_words(content)))[0], content)
-        self.assertEquals(list(iocextract.extract_sha512_hashes(_wrap_nonwords(content)))[0], content)
+        self.assertEqual(list(iocextract.extract_sha512_hashes(content))[0], content)
+        self.assertEqual(list(iocextract.extract_sha512_hashes(_wrap_spaces(content)))[0], content)
+        self.assertEqual(list(iocextract.extract_sha512_hashes(_wrap_tabs(content)))[0], content)
+        self.assertEqual(list(iocextract.extract_sha512_hashes(_wrap_newlines(content)))[0], content)
+        self.assertEqual(list(iocextract.extract_sha512_hashes(_wrap_words(content)))[0], content)
+        self.assertEqual(list(iocextract.extract_sha512_hashes(_wrap_nonwords(content)))[0], content)
 
     def test_md5_not_in_shax(self):
         content = 'adc83b19e793491b1c6ea0fd8b46cd9f32e592fc'
 
-        self.assertEquals(len(list(iocextract.extract_md5_hashes(content))), 0)
-        self.assertEquals(len(list(iocextract.extract_md5_hashes(_wrap_spaces(content)))), 0)
-        self.assertEquals(len(list(iocextract.extract_md5_hashes(_wrap_tabs(content)))), 0)
-        self.assertEquals(len(list(iocextract.extract_md5_hashes(_wrap_newlines(content)))), 0)
-        self.assertEquals(len(list(iocextract.extract_md5_hashes(_wrap_words(content)))), 0)
-        self.assertEquals(len(list(iocextract.extract_md5_hashes(_wrap_nonwords(content)))), 0)
+        self.assertEqual(len(list(iocextract.extract_md5_hashes(content))), 0)
+        self.assertEqual(len(list(iocextract.extract_md5_hashes(_wrap_spaces(content)))), 0)
+        self.assertEqual(len(list(iocextract.extract_md5_hashes(_wrap_tabs(content)))), 0)
+        self.assertEqual(len(list(iocextract.extract_md5_hashes(_wrap_newlines(content)))), 0)
+        self.assertEqual(len(list(iocextract.extract_md5_hashes(_wrap_words(content)))), 0)
+        self.assertEqual(len(list(iocextract.extract_md5_hashes(_wrap_nonwords(content)))), 0)
 
         content = '01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b'
 
-        self.assertEquals(len(list(iocextract.extract_md5_hashes(content))), 0)
-        self.assertEquals(len(list(iocextract.extract_md5_hashes(_wrap_spaces(content)))), 0)
-        self.assertEquals(len(list(iocextract.extract_md5_hashes(_wrap_tabs(content)))), 0)
-        self.assertEquals(len(list(iocextract.extract_md5_hashes(_wrap_newlines(content)))), 0)
-        self.assertEquals(len(list(iocextract.extract_md5_hashes(_wrap_words(content)))), 0)
-        self.assertEquals(len(list(iocextract.extract_md5_hashes(_wrap_nonwords(content)))), 0)
+        self.assertEqual(len(list(iocextract.extract_md5_hashes(content))), 0)
+        self.assertEqual(len(list(iocextract.extract_md5_hashes(_wrap_spaces(content)))), 0)
+        self.assertEqual(len(list(iocextract.extract_md5_hashes(_wrap_tabs(content)))), 0)
+        self.assertEqual(len(list(iocextract.extract_md5_hashes(_wrap_newlines(content)))), 0)
+        self.assertEqual(len(list(iocextract.extract_md5_hashes(_wrap_words(content)))), 0)
+        self.assertEqual(len(list(iocextract.extract_md5_hashes(_wrap_nonwords(content)))), 0)
 
         content = 'be688838ca8686e5c90689bf2ab585cef1137c999b48c70b92f67a5c34dc15697b5d11c982ed6d71be1e1e7f7b4e0733884aa97c3f7a339a8ed03577cf74be09'
 
-        self.assertEquals(len(list(iocextract.extract_md5_hashes(content))), 0)
-        self.assertEquals(len(list(iocextract.extract_md5_hashes(_wrap_spaces(content)))), 0)
-        self.assertEquals(len(list(iocextract.extract_md5_hashes(_wrap_tabs(content)))), 0)
-        self.assertEquals(len(list(iocextract.extract_md5_hashes(_wrap_newlines(content)))), 0)
-        self.assertEquals(len(list(iocextract.extract_md5_hashes(_wrap_words(content)))), 0)
-        self.assertEquals(len(list(iocextract.extract_md5_hashes(_wrap_nonwords(content)))), 0)
+        self.assertEqual(len(list(iocextract.extract_md5_hashes(content))), 0)
+        self.assertEqual(len(list(iocextract.extract_md5_hashes(_wrap_spaces(content)))), 0)
+        self.assertEqual(len(list(iocextract.extract_md5_hashes(_wrap_tabs(content)))), 0)
+        self.assertEqual(len(list(iocextract.extract_md5_hashes(_wrap_newlines(content)))), 0)
+        self.assertEqual(len(list(iocextract.extract_md5_hashes(_wrap_words(content)))), 0)
+        self.assertEqual(len(list(iocextract.extract_md5_hashes(_wrap_nonwords(content)))), 0)
 
     def test_sha1_not_in_shaxxx(self):
         content = '01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b'
 
-        self.assertEquals(len(list(iocextract.extract_sha1_hashes(content))), 0)
-        self.assertEquals(len(list(iocextract.extract_sha1_hashes(_wrap_spaces(content)))), 0)
-        self.assertEquals(len(list(iocextract.extract_sha1_hashes(_wrap_tabs(content)))), 0)
-        self.assertEquals(len(list(iocextract.extract_sha1_hashes(_wrap_newlines(content)))), 0)
-        self.assertEquals(len(list(iocextract.extract_sha1_hashes(_wrap_words(content)))), 0)
-        self.assertEquals(len(list(iocextract.extract_sha1_hashes(_wrap_nonwords(content)))), 0)
+        self.assertEqual(len(list(iocextract.extract_sha1_hashes(content))), 0)
+        self.assertEqual(len(list(iocextract.extract_sha1_hashes(_wrap_spaces(content)))), 0)
+        self.assertEqual(len(list(iocextract.extract_sha1_hashes(_wrap_tabs(content)))), 0)
+        self.assertEqual(len(list(iocextract.extract_sha1_hashes(_wrap_newlines(content)))), 0)
+        self.assertEqual(len(list(iocextract.extract_sha1_hashes(_wrap_words(content)))), 0)
+        self.assertEqual(len(list(iocextract.extract_sha1_hashes(_wrap_nonwords(content)))), 0)
 
         content = 'be688838ca8686e5c90689bf2ab585cef1137c999b48c70b92f67a5c34dc15697b5d11c982ed6d71be1e1e7f7b4e0733884aa97c3f7a339a8ed03577cf74be09'
 
-        self.assertEquals(len(list(iocextract.extract_sha1_hashes(content))), 0)
-        self.assertEquals(len(list(iocextract.extract_sha1_hashes(_wrap_spaces(content)))), 0)
-        self.assertEquals(len(list(iocextract.extract_sha1_hashes(_wrap_tabs(content)))), 0)
-        self.assertEquals(len(list(iocextract.extract_sha1_hashes(_wrap_newlines(content)))), 0)
-        self.assertEquals(len(list(iocextract.extract_sha1_hashes(_wrap_words(content)))), 0)
-        self.assertEquals(len(list(iocextract.extract_sha1_hashes(_wrap_nonwords(content)))), 0)
+        self.assertEqual(len(list(iocextract.extract_sha1_hashes(content))), 0)
+        self.assertEqual(len(list(iocextract.extract_sha1_hashes(_wrap_spaces(content)))), 0)
+        self.assertEqual(len(list(iocextract.extract_sha1_hashes(_wrap_tabs(content)))), 0)
+        self.assertEqual(len(list(iocextract.extract_sha1_hashes(_wrap_newlines(content)))), 0)
+        self.assertEqual(len(list(iocextract.extract_sha1_hashes(_wrap_words(content)))), 0)
+        self.assertEqual(len(list(iocextract.extract_sha1_hashes(_wrap_nonwords(content)))), 0)
 
     def test_sha256_not_in_sha512(self):
         content = 'be688838ca8686e5c90689bf2ab585cef1137c999b48c70b92f67a5c34dc15697b5d11c982ed6d71be1e1e7f7b4e0733884aa97c3f7a339a8ed03577cf74be09'
 
-        self.assertEquals(len(list(iocextract.extract_sha256_hashes(content))), 0)
-        self.assertEquals(len(list(iocextract.extract_sha256_hashes(_wrap_spaces(content)))), 0)
-        self.assertEquals(len(list(iocextract.extract_sha256_hashes(_wrap_tabs(content)))), 0)
-        self.assertEquals(len(list(iocextract.extract_sha256_hashes(_wrap_newlines(content)))), 0)
-        self.assertEquals(len(list(iocextract.extract_sha256_hashes(_wrap_words(content)))), 0)
-        self.assertEquals(len(list(iocextract.extract_sha256_hashes(_wrap_nonwords(content)))), 0)
+        self.assertEqual(len(list(iocextract.extract_sha256_hashes(content))), 0)
+        self.assertEqual(len(list(iocextract.extract_sha256_hashes(_wrap_spaces(content)))), 0)
+        self.assertEqual(len(list(iocextract.extract_sha256_hashes(_wrap_tabs(content)))), 0)
+        self.assertEqual(len(list(iocextract.extract_sha256_hashes(_wrap_newlines(content)))), 0)
+        self.assertEqual(len(list(iocextract.extract_sha256_hashes(_wrap_words(content)))), 0)
+        self.assertEqual(len(list(iocextract.extract_sha256_hashes(_wrap_nonwords(content)))), 0)
 
     def test_hash_extract(self):
         content = """
@@ -144,13 +147,13 @@ class TestExtractors(unittest.TestCase):
 
         processed = list(iocextract.extract_hashes(content))
 
-        self.assertEquals(len(processed), 4)
-        self.assertEquals(processed[0], '68b329da9893e34099c7d8ad5cb9c940')
+        self.assertEqual(len(processed), 4)
+        self.assertEqual(processed[0], '68b329da9893e34099c7d8ad5cb9c940')
 
         processed = list(iocextract.extract_iocs(content))
 
-        self.assertEquals(len(processed), 4)
-        self.assertEquals(processed[0], '68b329da9893e34099c7d8ad5cb9c940')
+        self.assertEqual(len(processed), 4)
+        self.assertEqual(processed[0], '68b329da9893e34099c7d8ad5cb9c940')
 
     def test_email_extract(self):
         content_list = [
@@ -164,13 +167,44 @@ class TestExtractors(unittest.TestCase):
             'my_user@example.co',
             'a@a.co',
             'a@127.0.0.1',
+            'myuser @example[.]com',
+            'myuser@ example[.]com',
+            'myuser @ example[.]com',
+            'myuser @ example [ . ] com',
+            'myuser @ example.com',
+            'myuser@example [.] com',
+            'myuser@example[.]com[.]tld',
+            'myuser@example(.)com[.tld',
+            'myuser@example[.]com.tld',
+            'myuser@example [.] com.tld',
+            'myuser@example [.] com [.] tld',
+            'myuser@example [.] com [.tld',
+            'myuser@example  [  .  ]   com',
+            'myuser@example  [  .  ]   com    [   .tld',
+            'myuser@example  [[[[ [ [ [ . )]) com',
+            'myuser@example  [[[[ [ [ [ dot )]) com',
+            'myuser at example  [[[[ [ [ [ dot )]) com',
+            'myuser at example [ dot ] com',
+            'myuser at example[ dot ]com',
+            'myuser at example[dot]com',
+            'myuser at example [dot] com',
+            'myuser [at] example dot com',
+            'myuser at example dot com',
+            'myuser AT example DOT com',
+            'myuser[@]example.com',
+            'myuser[@]example[.com',
+            'myuser [ at ] example.com',
+            'myuser [at] example.com',
+            'myuser[at]example.com',
+            'myuser[ at ]example.com',
+            'myuser/AT/example/DOT/com',
         ]
 
         for content in content_list:
-            self.assertEquals(list(iocextract.extract_emails(content))[0], content)
-            self.assertEquals(list(iocextract.extract_emails(_wrap_spaces(content)))[0], content)
-            self.assertEquals(list(iocextract.extract_emails(_wrap_tabs(content)))[0], content)
-            self.assertEquals(list(iocextract.extract_emails(_wrap_newlines(content)))[0], content)
+            self.assertEqual(list(iocextract.extract_emails(content))[0], content)
+            self.assertEqual(list(iocextract.extract_emails(_wrap_spaces(content)))[0], content)
+            self.assertEqual(list(iocextract.extract_emails(_wrap_tabs(content)))[0], content)
+            self.assertEqual(list(iocextract.extract_emails(_wrap_newlines(content)))[0], content)
 
         invalid_list = [
             '@a.co',
@@ -178,17 +212,38 @@ class TestExtractors(unittest.TestCase):
             '@',
             # don't extract non-fqdn emails
             'a@a',
+            'myuser @ word more words',
+            'myuser @ word more words.period',
+            'myuser @ words. Sentence',
+            'myuser@example . com',
+            'myuser@example .]com',
+            'myuseratexampledotcom',
+            'myuseratexample dot com',
+            'myuser at exampledotcom',
         ]
 
         for content in invalid_list:
-            self.assertEquals(len(list(iocextract.extract_emails(content))), 0)
-            self.assertEquals(len(list(iocextract.extract_emails(_wrap_spaces(content)))), 0)
-            self.assertEquals(len(list(iocextract.extract_emails(_wrap_tabs(content)))), 0)
-            self.assertEquals(len(list(iocextract.extract_emails(_wrap_newlines(content)))), 0)
+            self.assertEqual(len(list(iocextract.extract_emails(content))), 0)
+            self.assertEqual(len(list(iocextract.extract_emails(_wrap_spaces(content)))), 0)
+            self.assertEqual(len(list(iocextract.extract_emails(_wrap_tabs(content)))), 0)
+            self.assertEqual(len(list(iocextract.extract_emails(_wrap_newlines(content)))), 0)
+
+        expected = 'myuser@example [.] com'
+        partial_list = [
+            'myuser@example [.] com. tld',
+            'myuser@example [.] com . tld',
+            'myuser@example [.] com!!!???',
+        ]
+
+        for content in partial_list:
+            self.assertEqual(list(iocextract.extract_emails(content))[0], expected)
+            self.assertEqual(list(iocextract.extract_emails(_wrap_spaces(content)))[0], expected)
+            self.assertEqual(list(iocextract.extract_emails(_wrap_tabs(content)))[0], expected)
+            self.assertEqual(list(iocextract.extract_emails(_wrap_newlines(content)))[0], expected)
 
     def test_email_included_in_iocs(self):
         content = 'test@example.com'
-        self.assertEquals(list(iocextract.extract_iocs(content))[0], content)
+        self.assertEqual(list(iocextract.extract_iocs(content))[0], content)
 
     def test_ipv4_extract(self):
         content_list = [
@@ -211,12 +266,12 @@ class TestExtractors(unittest.TestCase):
         ]
 
         for content in content_list:
-            self.assertEquals(list(iocextract.extract_ipv4s(content))[0], content)
-            self.assertEquals(list(iocextract.extract_ipv4s(_wrap_spaces(content)))[0], content)
-            self.assertEquals(list(iocextract.extract_ipv4s(_wrap_tabs(content)))[0], content)
-            self.assertEquals(list(iocextract.extract_ipv4s(_wrap_newlines(content)))[0], content)
-            self.assertEquals(list(iocextract.extract_ipv4s(_wrap_words(content)))[0], content)
-            self.assertEquals(list(iocextract.extract_ipv4s(_wrap_nonwords(content)))[0], content)
+            self.assertEqual(list(iocextract.extract_ipv4s(content))[0], content)
+            self.assertEqual(list(iocextract.extract_ipv4s(_wrap_spaces(content)))[0], content)
+            self.assertEqual(list(iocextract.extract_ipv4s(_wrap_tabs(content)))[0], content)
+            self.assertEqual(list(iocextract.extract_ipv4s(_wrap_newlines(content)))[0], content)
+            self.assertEqual(list(iocextract.extract_ipv4s(_wrap_words(content)))[0], content)
+            self.assertEqual(list(iocextract.extract_ipv4s(_wrap_nonwords(content)))[0], content)
 
         invalid_list = [
             '192.168.1',
@@ -225,18 +280,18 @@ class TestExtractors(unittest.TestCase):
         ]
 
         for content in invalid_list:
-            self.assertEquals(len(list(iocextract.extract_ipv4s(content))), 0)
-            self.assertEquals(len(list(iocextract.extract_ipv4s(_wrap_spaces(content)))), 0)
-            self.assertEquals(len(list(iocextract.extract_ipv4s(_wrap_tabs(content)))), 0)
-            self.assertEquals(len(list(iocextract.extract_ipv4s(_wrap_newlines(content)))), 0)
+            self.assertEqual(len(list(iocextract.extract_ipv4s(content))), 0)
+            self.assertEqual(len(list(iocextract.extract_ipv4s(_wrap_spaces(content)))), 0)
+            self.assertEqual(len(list(iocextract.extract_ipv4s(_wrap_tabs(content)))), 0)
+            self.assertEqual(len(list(iocextract.extract_ipv4s(_wrap_newlines(content)))), 0)
 
     def test_ipv4_included_in_ips(self):
         content = '127.0.0.1'
-        self.assertEquals(list(iocextract.extract_ips(content))[0], content)
+        self.assertEqual(list(iocextract.extract_ips(content))[0], content)
 
     def test_ipv4_included_in_iocs(self):
         content = '127.0.0.1'
-        self.assertEquals(list(iocextract.extract_iocs(content))[0], content)
+        self.assertEqual(list(iocextract.extract_iocs(content))[0], content)
 
     def test_url_extract(self):
         domain_list = [
@@ -264,6 +319,8 @@ class TestExtractors(unittest.TestCase):
             "ftp://",
             "http__",
             "https__",
+            "https:__",
+            "http:\\\\",
             "ftx://",
             "udp://",
             "sftp://",
@@ -302,10 +359,10 @@ class TestExtractors(unittest.TestCase):
         ]
 
         for content in content_list:
-            self.assertEquals(list(iocextract.extract_urls(content))[0], content)
-            self.assertEquals(list(iocextract.extract_urls(_wrap_spaces(content)))[0], content)
-            self.assertEquals(list(iocextract.extract_urls(_wrap_tabs(content)))[0], content)
-            self.assertEquals(list(iocextract.extract_urls(_wrap_newlines(content)))[0], content)
+            self.assertEqual(list(iocextract.extract_urls(content))[0], content)
+            self.assertEqual(list(iocextract.extract_urls(_wrap_spaces(content)))[0], content)
+            self.assertEqual(list(iocextract.extract_urls(_wrap_tabs(content)))[0], content)
+            self.assertEqual(list(iocextract.extract_urls(_wrap_newlines(content)))[0], content)
 
         invalid_list = [
             # can't differentiate this from e.g. file.pdf
@@ -314,14 +371,14 @@ class TestExtractors(unittest.TestCase):
         ]
 
         for content in invalid_list:
-            self.assertEquals(len(list(iocextract.extract_urls(content))), 0)
-            self.assertEquals(len(list(iocextract.extract_urls(_wrap_spaces(content)))), 0)
-            self.assertEquals(len(list(iocextract.extract_urls(_wrap_tabs(content)))), 0)
-            self.assertEquals(len(list(iocextract.extract_urls(_wrap_newlines(content)))), 0)
+            self.assertEqual(len(list(iocextract.extract_urls(content))), 0)
+            self.assertEqual(len(list(iocextract.extract_urls(_wrap_spaces(content)))), 0)
+            self.assertEqual(len(list(iocextract.extract_urls(_wrap_tabs(content)))), 0)
+            self.assertEqual(len(list(iocextract.extract_urls(_wrap_newlines(content)))), 0)
 
     def test_url_included_in_iocs(self):
         content = 'http://domain.com/test'
-        self.assertEquals(list(iocextract.extract_iocs(content))[0], content)
+        self.assertEqual(list(iocextract.extract_iocs(content))[0], content)
 
     def test_ipv6_extract(self):
 
@@ -342,11 +399,11 @@ class TestExtractors(unittest.TestCase):
         ]
 
         for content in content_list:
-            self.assertEquals(list(iocextract.extract_ipv6s(content))[0], content)
-            self.assertEquals(list(iocextract.extract_ipv6s(_wrap_spaces(content)))[0], content)
-            self.assertEquals(list(iocextract.extract_ipv6s(_wrap_tabs(content)))[0], content)
-            self.assertEquals(list(iocextract.extract_ipv6s(_wrap_newlines(content)))[0], content)
-            self.assertEquals(list(iocextract.extract_ipv6s(_wrap_nonwords(content)))[0], content)
+            self.assertEqual(list(iocextract.extract_ipv6s(content))[0], content)
+            self.assertEqual(list(iocextract.extract_ipv6s(_wrap_spaces(content)))[0], content)
+            self.assertEqual(list(iocextract.extract_ipv6s(_wrap_tabs(content)))[0], content)
+            self.assertEqual(list(iocextract.extract_ipv6s(_wrap_newlines(content)))[0], content)
+            self.assertEqual(list(iocextract.extract_ipv6s(_wrap_nonwords(content)))[0], content)
 
         invalid_list = [
             '192.168.1',
@@ -356,18 +413,18 @@ class TestExtractors(unittest.TestCase):
         ]
 
         for content in invalid_list:
-            self.assertEquals(len(list(iocextract.extract_ipv6s(content))), 0)
-            self.assertEquals(len(list(iocextract.extract_ipv6s(_wrap_spaces(content)))), 0)
-            self.assertEquals(len(list(iocextract.extract_ipv6s(_wrap_tabs(content)))), 0)
-            self.assertEquals(len(list(iocextract.extract_ipv6s(_wrap_newlines(content)))), 0)
+            self.assertEqual(len(list(iocextract.extract_ipv6s(content))), 0)
+            self.assertEqual(len(list(iocextract.extract_ipv6s(_wrap_spaces(content)))), 0)
+            self.assertEqual(len(list(iocextract.extract_ipv6s(_wrap_tabs(content)))), 0)
+            self.assertEqual(len(list(iocextract.extract_ipv6s(_wrap_newlines(content)))), 0)
 
     def test_ipv6_included_in_ips(self):
         content = '2001:0db8:85a3:0000:0000:8a2e:0370:7334'
-        self.assertEquals(list(iocextract.extract_ips(content))[0], content)
+        self.assertEqual(list(iocextract.extract_ips(content))[0], content)
 
     def test_ipv6_included_in_iocs(self):
         content = '2001:0db8:85a3:0000:0000:8a2e:0370:7334'
-        self.assertEquals(list(iocextract.extract_iocs(content))[0], content)
+        self.assertEqual(list(iocextract.extract_iocs(content))[0], content)
 
     def test_yara_extract(self):
 
@@ -391,10 +448,10 @@ class TestExtractors(unittest.TestCase):
         ]
 
         for content in content_list:
-            self.assertEquals(list(iocextract.extract_yara_rules(content))[0], content)
-            self.assertEquals(list(iocextract.extract_yara_rules(_wrap_spaces(content)))[0], content)
-            self.assertEquals(list(iocextract.extract_yara_rules(_wrap_tabs(content)))[0], content)
-            self.assertEquals(list(iocextract.extract_yara_rules(_wrap_newlines(content)))[0], content)
+            self.assertEqual(list(iocextract.extract_yara_rules(content))[0], content)
+            self.assertEqual(list(iocextract.extract_yara_rules(_wrap_spaces(content)))[0], content)
+            self.assertEqual(list(iocextract.extract_yara_rules(_wrap_tabs(content)))[0], content)
+            self.assertEqual(list(iocextract.extract_yara_rules(_wrap_newlines(content)))[0], content)
 
         invalid_list = [
             'rule testRule { conditio: true }',
@@ -405,14 +462,14 @@ class TestExtractors(unittest.TestCase):
         ]
 
         for content in invalid_list:
-            self.assertEquals(len(list(iocextract.extract_yara_rules(content))), 0)
-            self.assertEquals(len(list(iocextract.extract_yara_rules(_wrap_spaces(content)))), 0)
-            self.assertEquals(len(list(iocextract.extract_yara_rules(_wrap_tabs(content)))), 0)
-            self.assertEquals(len(list(iocextract.extract_yara_rules(_wrap_newlines(content)))), 0)
+            self.assertEqual(len(list(iocextract.extract_yara_rules(content))), 0)
+            self.assertEqual(len(list(iocextract.extract_yara_rules(_wrap_spaces(content)))), 0)
+            self.assertEqual(len(list(iocextract.extract_yara_rules(_wrap_tabs(content)))), 0)
+            self.assertEqual(len(list(iocextract.extract_yara_rules(_wrap_newlines(content)))), 0)
 
     def test_yara_included_in_iocs(self):
         content = 'rule testRule { condition: true }'
-        self.assertEquals(list(iocextract.extract_iocs(content))[0], content)
+        self.assertEqual(list(iocextract.extract_iocs(content))[0], content)
 
     def test_refang_ipv4(self):
         content_list = [
@@ -425,8 +482,8 @@ class TestExtractors(unittest.TestCase):
         ]
 
         for content in content_list:
-            self.assertEquals(list(iocextract.extract_ipv4s(content, refang=True))[0], '111.111.111.111')
-            self.assertEquals(iocextract.refang_ipv4(content), '111.111.111.111')
+            self.assertEqual(list(iocextract.extract_ipv4s(content, refang=True))[0], '111.111.111.111')
+            self.assertEqual(iocextract.refang_ipv4(content), '111.111.111.111')
 
     def test_refang_url(self):
         content_list = [
@@ -445,47 +502,49 @@ class TestExtractors(unittest.TestCase):
             'hxxp://example[dotcom/test',
             'hxxp://example.com[/test',
             'http__example.com/test',
+            'http:__example.com/test',
+            'http:\\\\example.com/test',
         ]
 
         for content in content_list:
-            self.assertEquals(list(iocextract.extract_urls(content, refang=True))[0], 'http://example.com/test')
-            self.assertEquals(iocextract.refang_url(content), 'http://example.com/test')
+            self.assertEqual(list(iocextract.extract_urls(content, refang=True))[0], 'http://example.com/test')
+            self.assertEqual(iocextract.refang_url(content), 'http://example.com/test')
 
-        self.assertEquals(iocextract.refang_url('ftx://example.com/test'), 'ftp://example.com/test')
+        self.assertEqual(iocextract.refang_url('ftx://example.com/test'), 'ftp://example.com/test')
 
         # IPv6 works as expected
         content = 'http://[2001:db8:85a3:0:0:8a2e:370:7334]:80/test'
-        self.assertEquals(iocextract.refang_url(content), content)
-        self.assertEquals(list(iocextract.extract_urls(content, refang=True))[0], content)
+        self.assertEqual(iocextract.refang_url(content), content)
+        self.assertEqual(list(iocextract.extract_urls(content, refang=True))[0], content)
 
     def test_url_extraction_handles_punctuation(self):
-        self.assertEquals(list(iocextract.extract_urls('http://example.com!'))[0], 'http://example.com')
-        self.assertEquals(list(iocextract.extract_urls('http://example.com!!!!'))[0], 'http://example.com')
-        self.assertEquals(list(iocextract.extract_urls('http://example.com/!!!!'))[0], 'http://example.com/')
-        self.assertEquals(list(iocextract.extract_urls('http://example.com/!'))[0], 'http://example.com/')
-        self.assertEquals(list(iocextract.extract_urls('http://example.com/?'))[0], 'http://example.com/')
-        self.assertEquals(list(iocextract.extract_urls('http://example.com/!path'))[0], 'http://example.com/!path')
-        self.assertEquals(list(iocextract.extract_urls('http://example.com/?path'))[0], 'http://example.com/?path')
-        self.assertEquals(list(iocextract.extract_urls('http://example.com?'))[0], 'http://example.com')
-        self.assertEquals(list(iocextract.extract_urls('http://example.com.'))[0], 'http://example.com')
-        self.assertEquals(list(iocextract.extract_urls('http://example.com/?q=test???'))[0], 'http://example.com/?q=test')
-        self.assertEquals(list(iocextract.extract_urls('http://example.com/ ...'))[0], 'http://example.com/')
-        self.assertEquals(list(iocextract.extract_urls('http://example.com/)'))[0], 'http://example.com/')
-        self.assertEquals(list(iocextract.extract_urls('http://example.com/\''))[0], 'http://example.com/')
+        self.assertEqual(list(iocextract.extract_urls('http://example.com!'))[0], 'http://example.com')
+        self.assertEqual(list(iocextract.extract_urls('http://example.com!!!!'))[0], 'http://example.com')
+        self.assertEqual(list(iocextract.extract_urls('http://example.com/!!!!'))[0], 'http://example.com/')
+        self.assertEqual(list(iocextract.extract_urls('http://example.com/!'))[0], 'http://example.com/')
+        self.assertEqual(list(iocextract.extract_urls('http://example.com/?'))[0], 'http://example.com/')
+        self.assertEqual(list(iocextract.extract_urls('http://example.com/!path'))[0], 'http://example.com/!path')
+        self.assertEqual(list(iocextract.extract_urls('http://example.com/?path'))[0], 'http://example.com/?path')
+        self.assertEqual(list(iocextract.extract_urls('http://example.com?'))[0], 'http://example.com')
+        self.assertEqual(list(iocextract.extract_urls('http://example.com.'))[0], 'http://example.com')
+        self.assertEqual(list(iocextract.extract_urls('http://example.com/?q=test???'))[0], 'http://example.com/?q=test')
+        self.assertEqual(list(iocextract.extract_urls('http://example.com/ ...'))[0], 'http://example.com/')
+        self.assertEqual(list(iocextract.extract_urls('http://example.com/)'))[0], 'http://example.com/')
+        self.assertEqual(list(iocextract.extract_urls('http://example.com/\''))[0], 'http://example.com/')
 
-        self.assertEquals(list(iocextract.extract_urls('example[.]com!'))[0], 'example[.]com')
-        self.assertEquals(list(iocextract.extract_urls('example[.]com!!!!'))[0], 'example[.]com')
-        self.assertEquals(list(iocextract.extract_urls('example[.]com/!!!!'))[0], 'example[.]com/')
-        self.assertEquals(list(iocextract.extract_urls('example[.]com/!'))[0], 'example[.]com/')
-        self.assertEquals(list(iocextract.extract_urls('example[.]com/?'))[0], 'example[.]com/')
-        self.assertEquals(list(iocextract.extract_urls('example[.]com/!path'))[0], 'example[.]com/!path')
-        self.assertEquals(list(iocextract.extract_urls('example[.]com/?path'))[0], 'example[.]com/?path')
-        self.assertEquals(list(iocextract.extract_urls('example[.]com?'))[0], 'example[.]com')
-        self.assertEquals(list(iocextract.extract_urls('example[.]com.'))[0], 'example[.]com')
-        self.assertEquals(list(iocextract.extract_urls('example[.]com/?q=test???'))[0], 'example[.]com/?q=test')
-        self.assertEquals(list(iocextract.extract_urls('example[.]com/ ...'))[0], 'example[.]com/')
-        self.assertEquals(list(iocextract.extract_urls('example[.]com/)'))[0], 'example[.]com/')
-        self.assertEquals(list(iocextract.extract_urls('example[.]com/\''))[0], 'example[.]com/')
+        self.assertEqual(list(iocextract.extract_urls('example[.]com!'))[0], 'example[.]com')
+        self.assertEqual(list(iocextract.extract_urls('example[.]com!!!!'))[0], 'example[.]com')
+        self.assertEqual(list(iocextract.extract_urls('example[.]com/!!!!'))[0], 'example[.]com/')
+        self.assertEqual(list(iocextract.extract_urls('example[.]com/!'))[0], 'example[.]com/')
+        self.assertEqual(list(iocextract.extract_urls('example[.]com/?'))[0], 'example[.]com/')
+        self.assertEqual(list(iocextract.extract_urls('example[.]com/!path'))[0], 'example[.]com/!path')
+        self.assertEqual(list(iocextract.extract_urls('example[.]com/?path'))[0], 'example[.]com/?path')
+        self.assertEqual(list(iocextract.extract_urls('example[.]com?'))[0], 'example[.]com')
+        self.assertEqual(list(iocextract.extract_urls('example[.]com.'))[0], 'example[.]com')
+        self.assertEqual(list(iocextract.extract_urls('example[.]com/?q=test???'))[0], 'example[.]com/?q=test')
+        self.assertEqual(list(iocextract.extract_urls('example[.]com/ ...'))[0], 'example[.]com/')
+        self.assertEqual(list(iocextract.extract_urls('example[.]com/)'))[0], 'example[.]com/')
+        self.assertEqual(list(iocextract.extract_urls('example[.]com/\''))[0], 'example[.]com/')
 
     def test_hex_url_extraction(self):
         if sys.version_info[0] == 3:
@@ -493,33 +552,33 @@ class TestExtractors(unittest.TestCase):
         else:
             hexconvert = lambda x: binascii.hexlify(x)
 
-        self.assertEquals(list(iocextract.extract_urls(hexconvert('http://example.com/pa_th.doc?q=a#b'),
+        self.assertEqual(list(iocextract.extract_urls(hexconvert('http://example.com/pa_th.doc?q=a#b'),
                         refang=True))[0], 'http://example.com/pa_th.doc?q=a#b')
-        self.assertEquals(list(iocextract.extract_urls(hexconvert(_wrap_spaces('http://example.com/pa_th.doc?q=a#b')),
+        self.assertEqual(list(iocextract.extract_urls(hexconvert(_wrap_spaces('http://example.com/pa_th.doc?q=a#b')),
                         refang=True))[0], 'http://example.com/pa_th.doc?q=a#b')
-        self.assertEquals(list(iocextract.extract_urls(hexconvert(_wrap_newlines('http://example.com/pa_th.doc?q=a#b')),
+        self.assertEqual(list(iocextract.extract_urls(hexconvert(_wrap_newlines('http://example.com/pa_th.doc?q=a#b')),
                         refang=True))[0], 'http://example.com/pa_th.doc?q=a#b')
-        self.assertEquals(list(iocextract.extract_urls(hexconvert(_wrap_tabs('http://example.com/pa_th.doc?q=a#b')),
+        self.assertEqual(list(iocextract.extract_urls(hexconvert(_wrap_tabs('http://example.com/pa_th.doc?q=a#b')),
                         refang=True))[0], 'http://example.com/pa_th.doc?q=a#b')
-        self.assertEquals(list(iocextract.extract_urls(hexconvert('wordshttp://example.com/pa_th.doc?q=a#b words'),
+        self.assertEqual(list(iocextract.extract_urls(hexconvert('wordshttp://example.com/pa_th.doc?q=a#b words'),
                         refang=True))[0], 'http://example.com/pa_th.doc?q=a#b')
-        self.assertEquals(list(iocextract.extract_urls(hexconvert('http://example.com/pa_th.doc?q=a#b').upper(),
+        self.assertEqual(list(iocextract.extract_urls(hexconvert('http://example.com/pa_th.doc?q=a#b').upper(),
                         refang=True))[0], 'http://example.com/pa_th.doc?q=a#b')
 
     def test_urlencoded_url_extraction(self):
-        self.assertEquals(list(iocextract.extract_urls('rget="http%3A%2F%2Fexample%2Ecom%2Fwhite%2Ehta"/>',
+        self.assertEqual(list(iocextract.extract_urls('rget="http%3A%2F%2Fexample%2Ecom%2Fwhite%2Ehta"/>',
                         refang=True))[0], 'http://example.com/white.hta')
-        self.assertEquals(list(iocextract.extract_urls('http%3A%2F%2Fexample%2Ecom',
+        self.assertEqual(list(iocextract.extract_urls('http%3A%2F%2Fexample%2Ecom',
                         refang=True))[0], 'http://example.com')
-        self.assertEquals(list(iocextract.extract_urls('http%3A%2F%2Fexample%2Ecom'))[0],
+        self.assertEqual(list(iocextract.extract_urls('http%3A%2F%2Fexample%2Ecom'))[0],
                 'http%3A%2F%2Fexample%2Ecom')
-        self.assertEquals(list(iocextract.extract_urls('http%3A%2F%2Fexa-mple%2Ecom',
+        self.assertEqual(list(iocextract.extract_urls('http%3A%2F%2Fexa-mple%2Ecom',
                         refang=True))[0], 'http://exa-mple.com')
 
     def test_url_strip(self):
-        self.assertEquals(list(iocextract.extract_urls('http://schemas.openxmlformats.org/drawingml/2006/main"><a:graphicData',
+        self.assertEqual(list(iocextract.extract_urls('http://schemas.openxmlformats.org/drawingml/2006/main"><a:graphicData',
                         strip=True))[0], 'http://schemas.openxmlformats.org/drawingml/2006/main')
-        self.assertEquals(list(iocextract.extract_urls("http://127.0.0.1:%u/')%%IMPORT%%Command",
+        self.assertEqual(list(iocextract.extract_urls("http://127.0.0.1:%u/')%%IMPORT%%Command",
                         strip=True))[0], "http://127.0.0.1:%u/")
 
     def test_refang_never_excepts_from_urlparse(self):
@@ -530,39 +589,181 @@ class TestExtractors(unittest.TestCase):
             self.fail('Unhandled parsing error in refang: {e}'.format(e=e))
 
     def test_url_bracket_regex_tight_edge_cases(self):
-        self.assertEquals(list(iocextract.extract_urls('CDATA[^h00ps://test(.)com/]]>'))[1],
+        self.assertEqual(list(iocextract.extract_urls('CDATA[^h00ps://test(.)com/]]>'))[1],
                 'h00ps://test(.)com/')
 
     def test_url_generic_regex_tight_edge_cases(self):
-        self.assertEquals(len(list(iocextract.extract_urls('https://+test+/'))), 0)
-        self.assertEquals(len(list(iocextract.extract_urls('https://[test]/'))), 1)
-        self.assertEquals(len(list(iocextract.extract_urls('https:// test /'))), 1)
+        self.assertEqual(len(list(iocextract.extract_urls('https://+test+/'))), 0)
+        self.assertEqual(len(list(iocextract.extract_urls('https://[test]/'))), 1)
+        self.assertEqual(len(list(iocextract.extract_urls('https:// test /'))), 1)
 
     def test_refang_removes_some_backslash_escaped_characters(self):
-        self.assertEquals(iocextract.refang_url('https://example\(.)com/'), 'https://example.com/')
-        self.assertEquals(iocextract.refang_url('https://example\(.\)com/test\.html'), 'https://example.com/test.html')
+        self.assertEqual(iocextract.refang_url('https://example\(.)com/'), 'https://example.com/')
+        self.assertEqual(iocextract.refang_url('https://example\(.\)com/test\.html'), 'https://example.com/test.html')
 
     def test_ip_regex_allows_multiple_brackets(self):
-        self.assertEquals(list(iocextract.extract_ips('10.10.10.]]]10', refang=True))[0], '10.10.10.10')
-        self.assertEquals(list(iocextract.extract_ips('10.10.10.)))10', refang=True))[0], '10.10.10.10')
-        self.assertEquals(list(iocextract.extract_ips('10.10.10[[[.10', refang=True))[0], '10.10.10.10')
-        self.assertEquals(list(iocextract.extract_ips('10[[[[.]]]]10[[[.]]10[.10', refang=True))[0], '10.10.10.10')
-        self.assertEquals(list(iocextract.extract_ips('10(((.]]]]10([[.)10.)10', refang=True))[0], '10.10.10.10')
+        self.assertEqual(list(iocextract.extract_ips('10.10.10.]]]10', refang=True))[0], '10.10.10.10')
+        self.assertEqual(list(iocextract.extract_ips('10.10.10.)))10', refang=True))[0], '10.10.10.10')
+        self.assertEqual(list(iocextract.extract_ips('10.10.10[[[.10', refang=True))[0], '10.10.10.10')
+        self.assertEqual(list(iocextract.extract_ips('10[[[[.]]]]10[[[.]]10[.10', refang=True))[0], '10.10.10.10')
+        self.assertEqual(list(iocextract.extract_ips('10(((.]]]]10([[.)10.)10', refang=True))[0], '10.10.10.10')
 
     def test_ip_regex_allows_backslash_escape(self):
-        self.assertEquals(list(iocextract.extract_ips('10.10.10\.10', refang=True))[0], '10.10.10.10')
-        self.assertEquals(list(iocextract.extract_ips('10.10.10\\\\\\\\.10', refang=True))[0], '10.10.10.10')
-        self.assertEquals(list(iocextract.extract_ips('10\.10\.10\.10', refang=True))[0], '10.10.10.10')
-        self.assertEquals(list(iocextract.extract_ips('10\\\\\\\\\.10\\.10\.10', refang=True))[0], '10.10.10.10')
-        self.assertEquals(list(iocextract.extract_ips('10[.]10(.10\.10', refang=True))[0], '10.10.10.10')
+        self.assertEqual(list(iocextract.extract_ips('10.10.10\.10', refang=True))[0], '10.10.10.10')
+        self.assertEqual(list(iocextract.extract_ips('10.10.10\\\\\\\\.10', refang=True))[0], '10.10.10.10')
+        self.assertEqual(list(iocextract.extract_ips('10\.10\.10\.10', refang=True))[0], '10.10.10.10')
+        self.assertEqual(list(iocextract.extract_ips('10\\\\\\\\\.10\\.10\.10', refang=True))[0], '10.10.10.10')
+        self.assertEqual(list(iocextract.extract_ips('10[.]10(.10\.10', refang=True))[0], '10.10.10.10')
 
     def test_backslash_url_extraction(self):
-        self.assertEquals(list(iocextract.extract_urls('example\.com', refang=True))[0], 'http://example.com')
-        self.assertEquals(list(iocextract.extract_urls('test\.example\.com', refang=True))[0], 'http://test.example.com')
-        self.assertEquals(list(iocextract.extract_urls('test \. example \. com', refang=True))[0], 'http://test.example.com')
-        self.assertEquals(list(iocextract.extract_urls('test\.example \. com', refang=True))[0], 'http://test.example.com')
-        self.assertEquals(list(iocextract.extract_urls('http://test \. example \. com', refang=True))[1], 'http://test.example.com')
-        self.assertEquals(list(iocextract.extract_urls('test.example\.com', refang=True))[0], 'http://test.example.com')
-        self.assertEquals(list(iocextract.extract_urls('test\.example.com', refang=True))[0], 'http://test.example.com')
-        self.assertEquals(list(iocextract.extract_urls('a.b.c.test\.example.com', refang=True))[0], 'http://a.b.c.test.example.com')
-        self.assertEquals(list(iocextract.extract_urls('a\.b.c.test\.example.com', refang=True))[0], 'http://a.b.c.test.example.com')
+        self.assertEqual(list(iocextract.extract_urls('example\.com', refang=True))[0], 'http://example.com')
+        self.assertEqual(list(iocextract.extract_urls('test\.example\.com', refang=True))[0], 'http://test.example.com')
+        self.assertEqual(list(iocextract.extract_urls('test \. example \. com', refang=True))[0], 'http://test.example.com')
+        self.assertEqual(list(iocextract.extract_urls('test\.example \. com', refang=True))[0], 'http://test.example.com')
+        self.assertEqual(list(iocextract.extract_urls('http://test \. example \. com', refang=True))[1], 'http://test.example.com')
+        self.assertEqual(list(iocextract.extract_urls('test.example\.com', refang=True))[0], 'http://test.example.com')
+        self.assertEqual(list(iocextract.extract_urls('test\.example.com', refang=True))[0], 'http://test.example.com')
+        self.assertEqual(list(iocextract.extract_urls('a.b.c.test\.example.com', refang=True))[0], 'http://a.b.c.test.example.com')
+        self.assertEqual(list(iocextract.extract_urls('a\.b.c.test\.example.com', refang=True))[0], 'http://a.b.c.test.example.com')
+
+    def test_defang(self):
+        self.assertEqual(iocextract.defang('http://example.com/some/lo.ng/path.ext/'),
+                                            'hxxp://example[.]com/some/lo.ng/path.ext/')
+        self.assertEqual(iocextract.defang('http://example.com/path.ext'), 'hxxp://example[.]com/path.ext')
+        self.assertEqual(iocextract.defang('http://127.0.0.1/path.ext'), 'hxxp://127[.]0[.]0[.]1/path.ext')
+        self.assertEqual(iocextract.defang('http://example.com/'), 'hxxp://example[.]com/')
+        self.assertEqual(iocextract.defang('https://example.com/'), 'hxxps://example[.]com/')
+        self.assertEqual(iocextract.defang('ftp://example.com/'), 'fxp://example[.]com/')
+        self.assertEqual(iocextract.defang('example.com'), 'example[.]com')
+        self.assertEqual(iocextract.defang('example.com/'), 'example[.]com/')
+        self.assertEqual(iocextract.defang('example.com/some/lo.ng/path.ext/'), 'example[.]com/some/lo.ng/path.ext/')
+        self.assertEqual(iocextract.defang('127.0.0.1'), '127[.]0[.]0[.]1')
+
+    def test_email_refang(self):
+        content_list = [
+            'myuser@example[.]com[.]tld',
+            'myuser @example[.]com[.]tld',
+            'myuser @ example.com.tld',
+            'myuser@example(.)com[.tld',
+            'myuser@example[.]com.tld',
+            'myuser@example [.] com.tld',
+            'myuser@example [.] com [.] tld',
+            'myuser@example [.] com [.tld',
+            'myuser@example   [[[  . ])] com [.tld',
+            'myuser[@]example   [[[  . ])] com [.tld',
+            'myuser [ @ ] example   [[[  . ])] com [.tld',
+            'myuser { @ ) example   [[[  . ])] com [.tld',
+            'myuser { @ ) example {  . ])] com [.tld',
+            'myuser { at ) example {  . ])] com [.tld',
+            'myuser { at ) example {  doT ])] com [dot tld',
+            'myuser At example DOT com DOT tld',
+            'myuser[@]example[.com[.tld]',
+        ]
+
+        for content in content_list:
+            self.assertEqual(list(iocextract.extract_emails(content, refang=True))[0], 'myuser@example.com.tld')
+            self.assertEqual(iocextract.refang_email(content), 'myuser@example.com.tld')
+
+    def test_path_refang(self):
+        content_list = [
+            'http://example.com/test[.]htm',
+            'http://example[.]com/test[.]htm',
+        ]
+
+        for content in content_list:
+            self.assertEqual(list(iocextract.extract_urls(content, refang=True))[0], 'http://example.com/test.htm')
+            self.assertEqual(iocextract.refang_url(content), 'http://example.com/test.htm')
+
+    def test_b64_url_extraction_just_url(self):
+        content_list = [
+            base64.b64encode(b'http://example.com').decode('ascii'),
+            base64.b64encode(b'http://example.com/some/url').decode('ascii'),
+            base64.b64encode(b'http://example.com/some/url').decode('ascii'),
+            base64.b64encode(b'FtP://example.com/some/url').decode('ascii'),
+        ]
+
+        for content in content_list:
+            self.assertEqual(list(iocextract.extract_urls(content))[0], content)
+            self.assertEqual(list(iocextract.extract_urls(_wrap_spaces(content)))[0], content)
+            self.assertEqual(list(iocextract.extract_urls(_wrap_tabs(content)))[0], content)
+            self.assertEqual(list(iocextract.extract_urls(_wrap_newlines(content)))[0], content)
+            self.assertEqual(list(iocextract.extract_urls(_wrap_nonwords(content)))[0], content)
+
+    def test_b64_url_extraction_with_wrappers(self):
+        content_list = [
+            base64.b64encode(b'  http://example.com/test ').decode('ascii'),
+            base64.b64encode(b'words in front  http://example.com/test ').decode('ascii'),
+            base64.b64encode(b'  http://example.com/test words after').decode('ascii'),
+            base64.b64encode(b'  http://example.com/test\x99\x80 ').decode('ascii'),
+            base64.b64encode(b'sadasdasdasdhttp://example.com/test ').decode('ascii'),
+            base64.b64encode(b'adasdasdasdhttp://example.com/test ').decode('ascii'),
+            base64.b64encode(b'dasdasdasdhttp://example.com/test ').decode('ascii'),
+            base64.b64encode(b'asdasdasdhttp://example.com/test ').decode('ascii'),
+            base64.b64encode(b'sdasdasdhttp://example.com/test ').decode('ascii'),
+            base64.b64encode(b'reallylongreallylongreallylongreallylongreallylongreallylongreallylonghttp://example.com/test reallylong').decode('ascii'),
+        ]
+
+        for content in content_list:
+            self.assertEqual(list(iocextract.extract_urls(content, refang=True))[0], 'http://example.com/test')
+
+    def test_b64_url_extraction_bad_pad(self):
+        content_list = [
+            # good
+            'aHR0cDovL2V4YW1wbGUuY29t',
+            'aHR0cDovL2V4YW1wbGUuY29tIA==',
+            'aHR0cDovL2V4YW1wbGUuY29tICA=',
+            'aHR0cDovL2V4YW1wbGUuY29tICAg',
+            # bad
+            'aHR0cDovL2V4YW1wbGUuY29t=',
+            'aHR0cDovL2V4YW1wbGUuY29tIA=',
+            'aHR0cDovL2V4YW1wbGUuY29tICA',
+            'aHR0cDovL2V4YW1wbGUuY29tI',
+            'aHR0cDovL2V4YW1wbGUuY29tba',
+        ]
+
+        for content in content_list:
+            self.assertEqual(list(iocextract.extract_urls(content, refang=True))[0], 'http://example.com')
+
+    def test_extract_custom_extracts_from_list(self):
+        regex_list = [
+            r'(test\d)',
+            r't(..)t',
+            r'^(str.ng)$',
+        ]
+
+        self.assertEqual(list(iocextract.extract_custom_iocs('test1', regex_list)), ['test1', 'es'])
+        self.assertEqual(list(iocextract.extract_custom_iocs('a test2 string', regex_list)), ['test2', 'es'])
+        self.assertEqual(list(iocextract.extract_custom_iocs('just testing', regex_list)), ['es'])
+        self.assertEqual(list(iocextract.extract_custom_iocs('string', regex_list)), ['string'])
+        self.assertEqual(list(iocextract.extract_custom_iocs('strong', regex_list)), ['strong'])
+        self.assertEqual(list(iocextract.extract_custom_iocs('strange', regex_list)), [])
+        self.assertEqual(list(iocextract.extract_custom_iocs('another one', regex_list)), [])
+
+    def test_extract_custom_iocs_empty_list_extracts_nothing(self):
+        self.assertEqual(list(iocextract.extract_custom_iocs('content', [])), [])
+        self.assertEqual(list(iocextract.extract_custom_iocs('', [])), [])
+
+    def test_extract_custom_iocs_empty_content_extracts_nothing(self):
+        self.assertEqual(list(iocextract.extract_custom_iocs('', [r'egex'])), [])
+
+    def test_extract_custom_iocs_no_match_extracts_nothing(self):
+        self.assertEqual(list(iocextract.extract_custom_iocs('words', [r'egex'])), [])
+
+    def test_extract_custom_iocs_excepts_on_bad_regex(self):
+        # Note: have to use list() here because exceptions are only raised when
+        # the generator is executed.
+        with self.assertRaises(re.error):
+            list(iocextract.extract_custom_iocs('', [r'(mismatched paren']))
+            list(iocextract.extract_custom_iocs('', [r'[mismatched bracket']))
+
+        with self.assertRaises(IndexError):
+            list(iocextract.extract_custom_iocs('', [r'no capture group']))
+            list(iocextract.extract_custom_iocs('', [r'']))
+
+    def test_unicode_space_terminates_urls(self):
+        self.assertEqual(list(iocextract.extract_urls('as\xa0example[.]com/Es3tC0deR3name.exe):')),
+                         ['example[.]com/Es3tC0deR3name.exe'])
+        self.assertEqual(list(iocextract.extract_urls('as\xa0example[.]com\xa0words):')),
+                         ['example[.]com'])
+        self.assertEqual(list(iocextract.extract_urls('as\xa0http://example.com/test\xa0words):')),
+                         ['http://example.com/test'])

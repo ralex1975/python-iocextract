@@ -7,10 +7,11 @@ Otherwise, you can iterate over the objects (e.g. in a ``for`` loop) normally.
 Each object yielded from the generators will by of type :class:`str`.
 """
 import io
-import re
+import sys
 import itertools
 import argparse
 import binascii
+import base64
 try:
     # python3
     from urllib.parse import urlparse, unquote
@@ -20,25 +21,48 @@ except ImportError:
     from urllib import unquote
 
 import ipaddress
+import regex as re
 
-# Get basic url format, including a few obfuscation techniques, main anchor is the uri scheme
-GENERIC_URL_RE = re.compile(r"""
-        (
-            [fhstu]\w\w?[px]s?
-            (?::\/\/|__)
-            [\x20\(\[]*
-            \w
-            \S+?
-            (?:\x20[\/\.][^\.\/\s]\S*?)*
-        )
-        [\.\?>\"'\)!,}:;\]]*
-        (?=\s|$)
-    """, re.IGNORECASE | re.VERBOSE)
+# Reusable end punctuation regex.
+END_PUNCTUATION = r"[\.\?>\"'\)!,}:;\u201d\u2019\uff1e\uff1c\]]*"
 
-# Split URLs on some characters that may be valid, but may also be garbage
+# Reusable regex for symbols commonly used to defang.
+SEPARATOR_DEFANGS = r"[\(\)\[\]{}<>\\]"
+
+# Split URLs on some characters that may be valid, but may also be garbage.
 URL_SPLIT_STR = r"[>\"'\),};]"
 
-# Get some obfuscated urls, main anchor is brackets around the period
+# Get basic url format, including a few obfuscation techniques, main anchor is the uri scheme.
+GENERIC_URL_RE = re.compile(r"""
+        (
+            # Scheme.
+            [fhstu]\S\S?[px]s?
+
+            # One of these delimiters/defangs.
+            (?:
+                :\/\/|
+                :\\\\|
+                :?__
+            )
+
+            # Any number of defang characters.
+            (?:
+                \x20|
+                """ + SEPARATOR_DEFANGS + r"""
+            )*
+
+            # Domain/path characters.
+            \w
+            \S+?
+
+            # CISCO ESA style defangs followed by domain/path characters.
+            (?:\x20[\/\.][^\.\/\s]\S*?)*
+        )
+    """ + END_PUNCTUATION + r"""
+        (?=\s|$)
+    """, re.IGNORECASE | re.VERBOSE | re.UNICODE)
+
+# Get some obfuscated urls, main anchor is brackets around the period.
 BRACKET_URL_RE = re.compile(r"""
         \b
         (
@@ -54,11 +78,11 @@ BRACKET_URL_RE = re.compile(r"""
                 \S*?
             )+
         )
-        [\.\?>\"'\)!,}:;\]]*
+    """ + END_PUNCTUATION + r"""
         (?=\s|$)
-    """, re.VERBOSE)
+    """, re.VERBOSE | re.UNICODE)
 
-# Get some obfuscated urls, main anchor is backslash before a period
+# Get some obfuscated urls, main anchor is backslash before a period.
 BACKSLASH_URL_RE = re.compile(r"""
         \b
         (
@@ -82,11 +106,11 @@ BACKSLASH_URL_RE = re.compile(r"""
                 \S*?
             )*
         )
-        [\.\?>\"'\)!,}:;\]]*
+    """ + END_PUNCTUATION + r"""
         (?=\s|$)
-    """, re.VERBOSE)
+    """, re.VERBOSE | re.UNICODE)
 
-# Get hex-encoded urls
+# Get hex-encoded urls.
 HEXENCODED_URL_RE = re.compile(r"""
         (
             [46][86]
@@ -101,12 +125,34 @@ HEXENCODED_URL_RE = re.compile(r"""
         ]|$)
     """, re.IGNORECASE | re.VERBOSE)
 
-# Get urlencoded urls
+# Get urlencoded urls.
 URLENCODED_URL_RE = re.compile(r"""
         (s?[hf]t?tps?%3A%2F%2F\w[\w%-]*?)(?:[^\w%-]|$)
     """, re.IGNORECASE | re.VERBOSE)
 
-# Get some valid obfuscated ip addresses
+# Get base64-encoded urls.
+B64ENCODED_URL_RE = re.compile(r"""
+        (
+            # b64re '([hH][tT][tT][pP][sS]|[hH][tT][tT][pP]|[fF][tT][pP])://'
+            # modified to ignore whitespace
+            (?:
+                [\x2b\x2f-\x39A-Za-z]\s*[\x2b\x2f-\x39A-Za-z]\s*[\x31\x35\x39BFJNRVZdhlptx]\s*[Gm]\s*[Vd]\s*[FH]\s*[A]\s*\x36\s*L\s*y\s*[\x2b\x2f\x38-\x39]\s*|
+                [\x2b\x2f-\x39A-Za-z]\s*[\x2b\x2f-\x39A-Za-z]\s*[\x31\x35\x39BFJNRVZdhlptx]\s*[Io]\s*[Vd]\s*[FH]\s*[R]\s*[Qw]\s*[O]\s*i\s*\x38\s*v\s*[\x2b\x2f-\x39A-Za-z]\s*|
+                [\x2b\x2f-\x39A-Za-z]\s*[\x2b\x2f-\x39A-Za-z]\s*[\x31\x35\x39BFJNRVZdhlptx]\s*[Io]\s*[Vd]\s*[FH]\s*[R]\s*[Qw]\s*[Uc]\s*[z]\s*o\s*v\s*L\s*[\x2b\x2f-\x39w-z]\s*|
+                [\x2b\x2f-\x39A-Za-z]\s*[\x30\x32EGUWkm]\s*[Z]\s*[\x30U]\s*[Uc]\s*[D]\s*o\s*v\s*L\s*[\x2b\x2f-\x39w-z]\s*|
+                [\x2b\x2f-\x39A-Za-z]\s*[\x30\x32EGUWkm]\s*[h]\s*[\x30U]\s*[Vd]\s*[FH]\s*[A]\s*\x36\s*L\s*y\s*[\x2b\x2f\x38-\x39]\s*|
+                [\x2b\x2f-\x39A-Za-z]\s*[\x30\x32EGUWkm]\s*[h]\s*[\x30U]\s*[Vd]\s*[FH]\s*[B]\s*[Tz]\s*[O]\s*i\s*\x38\s*v\s*[\x2b\x2f-\x39A-Za-z]\s*|
+                [RZ]\s*[ln]\s*[R]\s*[Qw]\s*[O]\s*i\s*\x38\s*v\s*[\x2b\x2f-\x39A-Za-z]\s*|
+                [Sa]\s*[FH]\s*[R]\s*[\x30U]\s*[Uc]\s*[D]\s*o\s*v\s*L\s*[\x2b\x2f-\x39w-z]\s*|
+                [Sa]\s*[FH]\s*[R]\s*[\x30U]\s*[Uc]\s*[FH]\s*[M]\s*\x36\s*L\s*y\s*[\x2b\x2f\x38-\x39]\s*
+            )
+            # up to 260 characters (pre-encoding, reasonable URL length)
+            [A-Za-z0-9+/=\s]{1,357}
+        )
+        (?=[^A-Za-z0-9+/=\s]|$)
+    """, re.VERBOSE)
+
+# Get some valid obfuscated ip addresses.
 IPV4_RE = re.compile(r"""
         (?:^|
             (?![^\d\.])
@@ -119,18 +165,48 @@ IPV4_RE = re.compile(r"""
         (?:(?=[^\d\.])|$)
     """, re.VERBOSE)
 
-# Experimental IPV6 regex, will not catch everything but should be sufficent for now
+# Experimental IPv6 regex, will not catch everything but should be sufficent for now.
 IPV6_RE = re.compile(r"""
         \b(?:[a-f0-9]{1,4}:|:){2,7}(?:[a-f0-9]{1,4}|:)\b
     """, re.IGNORECASE | re.VERBOSE)
 
-EMAIL_RE = re.compile(r"([a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+)")
+# Capture email addresses including common defangs.
+EMAIL_RE = re.compile(r"""
+        (
+            [a-z0-9_.+-]+
+            [\(\[{\x20]*
+            (?:@|\Wat\W)
+            [\)\]}\x20]*
+            [a-z0-9-]+
+            (?:
+                (?:
+                    (?:
+                        \x20*
+                        """ + SEPARATOR_DEFANGS + r"""
+                        \x20*
+                    )*
+                    \.
+                    (?:
+                        \x20*
+                        """ + SEPARATOR_DEFANGS + r"""
+                        \x20*
+                    )*
+                    |
+                    \W+dot\W+
+                )
+                [a-z0-9-]+?
+            )+
+        )
+    """ + END_PUNCTUATION + r"""
+        (?=\s|$)
+    """, re.IGNORECASE | re.VERBOSE | re.UNICODE)
+
 MD5_RE = re.compile(r"(?:[^a-fA-F\d]|\b)([a-fA-F\d]{32})(?:[^a-fA-F\d]|\b)")
 SHA1_RE = re.compile(r"(?:[^a-fA-F\d]|\b)([a-fA-F\d]{40})(?:[^a-fA-F\d]|\b)")
 SHA256_RE = re.compile(r"(?:[^a-fA-F\d]|\b)([a-fA-F\d]{64})(?:[^a-fA-F\d]|\b)")
 SHA512_RE = re.compile(r"(?:[^a-fA-F\d]|\b)([a-fA-F\d]{128})(?:[^a-fA-F\d]|\b)")
 
-# YARA regex
+# YARA regex.
 YARA_SPLIT_STR = r"""
         \n[\t\s]*\}[\s\t]*(rule[\t\s][^\r\n]+(?:\{|[\r\n][\r\n\s\t]*\{))
 """
@@ -161,7 +237,7 @@ def extract_iocs(data, refang=False, strip=False):
     return itertools.chain(
         extract_urls(data, refang=refang, strip=strip),
         extract_ips(data, refang=refang),
-        extract_emails(data),
+        extract_emails(data, refang=refang),
         extract_hashes(data),
         extract_yara_rules(data)
     )
@@ -202,6 +278,26 @@ def extract_urls(data, refang=False, strip=False):
         else:
             yield url.group(1)
 
+    for url in B64ENCODED_URL_RE.finditer(data):
+        url = url.group(1)
+
+        # Truncate the string if it's not a multiple of 3 bytes long.
+        # We don't care about the end of the string since it's probably garbage.
+        if len(url) % 4:
+            url = url[:-(len(url) % 4)]
+
+        if refang:
+            # Stop at the first whitespace or non-unicode character.
+            url = base64.b64decode(url).decode('utf-8', 'replace').\
+                                        split(u'\ufffd')[0].\
+                                        split()[0]
+
+            # Remove the first 1-2 bytes if we got back extra leading characters from the base64.
+            # The only valid starts are "http" or "ftp", so look for h/f case insensitive.
+            url = url[re.search('[hHfF]', url).start():]
+
+        yield url
+
 def extract_ips(data, refang=False):
     """Extract IP addresses.
 
@@ -240,14 +336,20 @@ def extract_ipv6s(data):
     for ip_address in IPV6_RE.finditer(data):
         yield ip_address.group(0)
 
-def extract_emails(data):
-    """Extract email addresses
+def extract_emails(data, refang=False):
+    """Extract email addresses.
 
     :param data: Input text
+    :param bool refang: Refang output?
     :rtype: Iterator[:class:`str`]
     """
     for email in EMAIL_RE.finditer(data):
-        yield email.group(0)
+        if refang:
+            email = refang_email(email.group(1))
+        else:
+            email = email.group(1)
+
+        yield email
 
 def extract_hashes(data):
     """Extract MD5/SHA hashes.
@@ -312,6 +414,50 @@ def extract_yara_rules(data):
     for yara_rule in YARA_PARSE_RE.finditer(yara_rules):
         yield yara_rule.group(1)
 
+def extract_custom_iocs(data, regex_list):
+    """Extract using custom regex strings.
+
+    Will always yield only the first *group* match from each regex.
+
+    Always use a single capture group! Do this::
+
+        [
+            r'(my regex)',  # This yields 'my regex' if the pattern matches.
+            r'my (re)gex',  # This yields 're' if the pattern matches.
+        ]
+
+    NOT this::
+
+        [
+            r'my regex',  # BAD! This doesn't yield anything.
+            r'(my) (re)gex',  # BAD! This yields 'my' if the pattern matches.
+        ]
+
+    For complicated regexes, you can combine capture and non-capture groups,
+    like this::
+
+        [
+            r'(?:my|your) (re)gex',  # This yields 're' if the pattern matches.
+        ]
+
+    Note the (?: ) syntax for noncapture groups vs the ( ) syntax for the capture
+    group.
+
+    :param data: Input text
+    :param regex_list: List of strings to treat as regex and match against data.
+    :rtype: Iterator[:class:`str`]
+    """
+
+    # Compile all the regex strings first, so we can error out quickly.
+    regex_objects = []
+    for regex_string in regex_list:
+        regex_objects.append(re.compile(regex_string))
+
+    # Iterate over regex objects, running each against input data.
+    for regex_object in regex_objects:
+        for ioc in regex_object.finditer(data):
+            yield ioc.group(1)
+
 def _is_ipv6_url(url):
     """URL network location is an IPv6 address, not a domain.
 
@@ -337,7 +483,7 @@ def _is_ipv6_url(url):
 def _refang_common(ioc):
     """Remove artifacts from common defangs.
 
-    :param ioc: String IP Address or URL netloc.
+    :param ioc: String IP/Email Address or URL netloc.
     :rtype: str
     """
     return ioc.replace('[dot]', '.').\
@@ -348,6 +494,23 @@ def _refang_common(ioc):
                replace(',', '.').\
                replace(' ', '').\
                replace(u'\u30fb', '.')
+
+def refang_email(email):
+    """Refang an email address.
+
+    :param email: String email address.
+    :rtype: str
+    """
+    # Check for ' at ' and ' dot ' first.
+    email = re.sub('\W[aA][tT]\W', '@', email.lower())
+    email = re.sub('\W*[dD][oO][tT]\W*', '.', email)
+
+    # Then do other char replaces.
+    return _refang_common(email).replace('[', '').\
+                                 replace(']', '').\
+                                 replace('{', '').\
+                                 replace('}', '').\
+                                 replace('{', '')
 
 def refang_url(url):
     """Refang a URL.
@@ -370,9 +533,15 @@ def refang_url(url):
 
     # Since urlparse expects a scheme, make sure one exists.
     if '//' not in url:
-        if '__' in url[:7]:
-            # Support http__domain.
-            url = url.replace('__', '://', 1)
+        if '__' in url[:8]:
+            # Support http__domain and http:__domain
+            if ':__' in url[:8]:
+                url = url.replace(':__', '://', 1)
+            else:
+                url = url.replace('__', '://', 1)
+        elif '\\\\' in url[:8]:
+            # Support http:\\domain
+            url = url.replace('\\\\', '//', 1)
         else:
             # Support no-protocol.
             url = 'http://' + url
@@ -416,6 +585,7 @@ def refang_url(url):
 
     # Remove artifacts from common defangs.
     parsed = parsed._replace(netloc=_refang_common(parsed.netloc))
+    parsed = parsed._replace(path=parsed.path.replace('[.]', '.'))
 
     # Fix example[.]com, but keep RFC 2732 URLs intact.
     if not _is_ipv6_url(url):
@@ -433,20 +603,48 @@ def refang_ipv4(ip_address):
                                       replace(']', '').\
                                       replace('\\', '')
 
+def defang(ioc):
+    """Defang a URL, domain, or IPv4 address.
+
+    :param ioc: String URL, domain, or IPv4 address.
+    :rtype: str
+    """
+    # If it's a url, defang just the scheme and netloc.
+    try:
+        parsed = urlparse(ioc)
+        if parsed.netloc:
+            parsed = parsed._replace(netloc=parsed.netloc.replace('.', '[.]'),
+                                     scheme=parsed.scheme.replace('t', 'x'))
+            return parsed.geturl()
+    except ValueError:
+        pass
+
+    # If it's a domain or IP, defang up to the first slash.
+    split_list = ioc.split('/')
+    defanged = split_list[0].replace('.', '[.]')
+    # Include everything after the first slash without modification.
+    if len(split_list) > 1:
+        defanged = '/'.join([defanged] + split_list[1:])
+
+    return defanged
+
 def main():
     """Run as a commandline utility."""
     parser = argparse.ArgumentParser(
         description="""Advanced Indicator of Compromise (IOC) extractor.
                        If no arguments are specified, the default behavior is
                        to extract all IOCs.""")
-    parser.add_argument('--input', type=lambda x: io.open(x, 'r', encoding='utf-8'),
-                        default=io.open(0, 'r', encoding='utf-8'), help="default: stdin")
-    parser.add_argument('--output', type=lambda x: io.open(x, 'w', encoding='utf-8'),
-                        default=io.open(1, 'w', encoding='utf-8'), help="default: stdout")
+    parser.add_argument('--input', type=lambda x: io.open(x, 'r', encoding='utf-8', errors='ignore'),
+                        default=io.open(0, 'r', encoding='utf-8', errors='ignore'), help="default: stdin")
+    parser.add_argument('--output', type=lambda x: io.open(x, 'w', encoding='utf-8', errors='ignore'),
+                        default=io.open(1, 'w', encoding='utf-8', errors='ignore'), help="default: stdout")
     parser.add_argument('--extract-ips', action='store_true')
     parser.add_argument('--extract-urls', action='store_true')
     parser.add_argument('--extract-yara-rules', action='store_true')
     parser.add_argument('--extract-hashes', action='store_true')
+    parser.add_argument('--custom-regex', type=lambda x: io.open(x, 'r', encoding='utf-8', errors='ignore'),
+                        metavar='REGEX_FILE',
+                        help="file with custom regex strings, one per line, with one capture group each")
     parser.add_argument('--refang', action='store_true', help="default: no")
     parser.add_argument('--strip-urls', action='store_true',
                         help="remove possible garbage from the end of urls. default: no")
@@ -460,7 +658,8 @@ def main():
         data = data.replace('\x00', '')
 
     # By default, extract all.
-    if not (args.extract_ips or args.extract_urls or args.extract_yara_rules or args.extract_hashes):
+    if not (args.extract_ips or args.extract_urls or args.extract_yara_rules or args.extract_hashes or
+            args.custom_regex):
         for ioc in extract_iocs(data, refang=args.refang, strip=args.strip_urls):
             args.output.write(u"{ioc}\n".format(ioc=ioc))
     else:
@@ -476,6 +675,16 @@ def main():
         if args.extract_hashes:
             for ioc in extract_hashes(data):
                 args.output.write(u"{ioc}\n".format(ioc=ioc))
+
+        # Custom regex file, one per line.
+        if args.custom_regex:
+            regex_list = [l.strip() for l in args.custom_regex.readlines()]
+
+            try:
+                for ioc in extract_custom_iocs(data, regex_list):
+                    args.output.write(u"{ioc}\n".format(ioc=ioc))
+            except (IndexError, re.error) as e:
+                sys.stderr.write('Error in custom regex: {e}\n'.format(e=e))
 
 if __name__ == "__main__":
     main()

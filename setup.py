@@ -8,12 +8,14 @@ os.chdir(os.path.normpath(os.path.join(os.path.abspath(__file__), os.pardir)))
 
 setup(
     name='iocextract',
-    version='1.3.1',
+    version='1.11.0',
     include_package_data=True,
     py_modules=[
         'iocextract',
     ],
-    install_requires=[],
+    install_requires=[
+        'regex',
+    ],
     extras_require={
         ':python_version <= "2.7"': [
             'ipaddress',
@@ -25,7 +27,7 @@ setup(
           ]
     },
     license='BSD',
-    description='Advanced Indicator of Compromise (IOC) extractor',
+    description='Advanced Indicator of Compromise (IOC) extractor.',
     long_description=README,
     url='https://github.com/InQuest/python-iocextract',
     author='InQuest Labs',

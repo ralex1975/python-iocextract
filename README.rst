@@ -1,11 +1,19 @@
-iocextract
-==========
+.. raw:: html
 
+    <p align="center">
+      <img height="128" src="https://inquest.readthedocs.io/projects/iocextract/en/latest/_static/iocextract.png"  alt="iocextract" title="iocextract">
+    </p>
+
+    <h1 align="center">iocextract</h1>
+
+.. image:: https://inquest.net/images/inquest-badge.svg
+    :target: https://inquest.net/
+    :alt: Developed by InQuest
 .. image:: https://travis-ci.org/InQuest/python-iocextract.svg?branch=master
     :target: https://travis-ci.org/InQuest/python-iocextract
     :alt: Build Status
 .. image:: https://readthedocs.org/projects/iocextract/badge/?version=latest
-    :target: http://iocextract.readthedocs.io/en/latest/?badge=latest
+    :target: http://inquest.readthedocs.io/projects/iocextract/en/latest/?badge=latest
     :alt: Documentation Status
 .. image:: https://api.codacy.com/project/badge/Grade/920894593bde451c9277c56b7d9ab3e1
     :target: https://app.codacy.com/app/InQuest/python-iocextract
@@ -22,9 +30,9 @@ Advanced Indicator of Compromise (IOC) extractor.
 Overview
 --------
 
-This library extracts URLs, IP addresses, MD5/SHA hashes, and YARA rules from
-text corpora. It includes obfuscated and "defanged" IOCs in the output, and
-optionally deobfuscates them.
+This library extracts URLs, IP addresses, MD5/SHA hashes, email addresses, and
+YARA rules from text corpora. It includes some encoded and "defanged" IOCs in the
+output, and optionally decodes/refangs them.
 
 The Problem
 -----------
@@ -33,18 +41,18 @@ It is common practice for malware analysts or endpoint software to "defang" IOCs
 such as URLs and IP addresses, in order to prevent accidental exposure to live
 malicious content. Being able to extract and aggregate these IOCs is often valuable
 for analysts. Unfortunately, existing "IOC extraction" tools often pass right by them,
-as they are not caught by standard REGEX.
+as they are not caught by standard regex.
 
 For example, the simple defanging technique of surrounding periods with brackets::
 
     127[.]0[.]0[.]1
 
-Existing tools that use a simple IP address REGEX will ignore this IOC entirely.
+Existing tools that use a simple IP address regex will ignore this IOC entirely.
 
 The Solution
 ------------
 
-By combining specially crafted REGEX with some custom postprocessing, we are
+By combining specially crafted regex with some custom postprocessing, we are
 able to both detect and deobfuscate "defanged" IOCs. This saves time and effort
 for the analyst, who might otherwise have to manually find and convert IOCs into
 machine-readable format.
@@ -72,14 +80,24 @@ since these are real IOCs, let's leave them defanged in our documentation. :)
 Installation
 ------------
 
-Just get it from pip::
+You may need to install the Python development headers in order to install the
+``regex`` dependency. On Ubuntu/Debian-based systems, try::
+
+    sudo apt-get install python-dev
+
+Then install ``iocextract`` from pip::
 
     pip install iocextract
+
+If you have problems installing on Windows, try installing ``regex`` directly
+by downloading the `appropriate wheel from PyPI`_ and running e.g.::
+
+    pip install regex-2018.06.21-cp27-none-win_amd64.whl
 
 Usage
 -----
 
-Try extracting some defanged URLS::
+Try extracting some defanged URLs::
 
     >>> content = """
     ... I really love example[.]com!
@@ -95,7 +113,7 @@ Try extracting some defanged URLS::
     example[.]com
     tcp://example[.]com:8989/bad
 
-Note that some URLs may show up twice if they are caught by multiple REGEXes.
+Note that some URLs may show up twice if they are caught by multiple regexes.
 
 If you want, you can also "refang", or remove common obfuscation methods from
 IOCs::
@@ -108,7 +126,7 @@ IOCs::
     http://example.com
     http://example.com:8989/bad
 
-You can even extract and decode hex-encoded URLs::
+You can even extract and decode hex-encoded and base64-encoded URLs::
 
     >>> content = '612062756e6368206f6620776f72647320687474703a2f2f6578616d706c652e636f6d2f70617468206d6f726520776f726473'
     >>> for url in iocextract.extract_urls(content):
@@ -133,7 +151,9 @@ A command-line tool is also included::
     $ iocextract -h
     usage: iocextract [-h] [--input INPUT] [--output OUTPUT] [--extract-ips]
                       [--extract-urls] [--extract-yara-rules] [--extract-hashes]
-                      [--refang] [--strip-urls]
+                      [--custom-regex REGEX_FILE] [--refang] [--strip-urls]
+                      [--wide]
+
 
     Advanced Indicator of Compromise (IOC) extractor. If no arguments are
     specified, the default behavior is to extract all IOCs.
@@ -146,6 +166,10 @@ A command-line tool is also included::
       --extract-urls
       --extract-yara-rules
       --extract-hashes
+      --custom-regex REGEX_FILE
+                            file with custom regex strings, one per line, with one
+                            capture group each
+
       --refang              default: no
       --strip-urls          remove possible garbage from the end of urls. default:
                             no
@@ -153,7 +177,7 @@ A command-line tool is also included::
                             matches. default: no
 
 
-Only URLs and IPv4 addresses can be "refanged".
+Only URLs, emails, and IPv4 addresses can be "refanged".
 
 More Details
 ------------
@@ -169,62 +193,140 @@ This library currently supports the following IOCs:
     * IPv4 and IPv6 (RFC2732) URLs are supported
     * Hex-encoded URLs with protocol specifier: http, https, ftp
     * URL-encoded URLs with protocol specifier: http, https, ftp, ftps, sftp
+    * Base64-encoded URLs with protocol specifier: http, https, ftp
 * Emails
-    * Partially supported, anchoring on ``@``
+    * Partially supported, anchoring on ``@`` or ``at``
 * YARA rules
 * Hashes
     * MD5
     * SHA1
     * SHA256
     * SHA512
+* Custom regex
 
 For IPv4 addresses, the following defang techniques are supported:
 
-+-----------------+---------------+-----------+
-| Technique       | Defanged      | Refanged  |
-+=================+===============+===========+
-| ``. -> [.]``    | 1[.]1[.]1[.]1 | 1.1.1.1   |
-+-----------------+---------------+-----------+
-| ``. -> (.)``    | 1(.)1(.)1(.)1 | 1.1.1.1   |
-+-----------------+---------------+-----------+
-| ``. -> \.``     | 1\.1\.1\.1    | 1.1.1.1   |
-+-----------------+---------------+-----------+
-| Partial         | 1[.1[.1.]1    | 1.1.1.1   |
-+-----------------+---------------+-----------+
-| Any combination | 1\.)1[.1.)1   | 1.1.1.1   |
-+-----------------+---------------+-----------+
+.. container:: responsive-table
+
+   +-----------------+---------------+-----------+
+   | Technique       | Defanged      | Refanged  |
+   +=================+===============+===========+
+   | ``. -> [.]``    | 1[.]1[.]1[.]1 | 1.1.1.1   |
+   +-----------------+---------------+-----------+
+   | ``. -> (.)``    | 1(.)1(.)1(.)1 | 1.1.1.1   |
+   +-----------------+---------------+-----------+
+   | ``. -> \.``     | ``1\.1\.1\.1``| 1.1.1.1   |
+   +-----------------+---------------+-----------+
+   | Partial         | 1[.1[.1.]1    | 1.1.1.1   |
+   +-----------------+---------------+-----------+
+   | Any combination | 1\.)1[.1.)1   | 1.1.1.1   |
+   +-----------------+---------------+-----------+
+
+For email addresses, the following defang techniques are supported:
+
+.. container:: responsive-table
+
+   +-----------------+--------------------+----------------+
+   | Technique       | Defanged           | Refanged       |
+   +=================+====================+================+
+   | ``. -> [.]``    | me@example[.]com   | me@example.com |
+   +-----------------+--------------------+----------------+
+   | ``. -> (.)``    | me@example(.)com   | me@example.com |
+   +-----------------+--------------------+----------------+
+   | ``. -> {.}``    | me@example{.}com   | me@example.com |
+   +-----------------+--------------------+----------------+
+   | ``. -> _dot_``  | me@example dot com | me@example.com |
+   +-----------------+--------------------+----------------+
+   | ``@ -> [@]``    | me[@]example.com   | me@example.com |
+   +-----------------+--------------------+----------------+
+   | ``@ -> (@)``    | me(@)example.com   | me@example.com |
+   +-----------------+--------------------+----------------+
+   | ``@ -> {@}``    | me{@}example.com   | me@example.com |
+   +-----------------+--------------------+----------------+
+   | ``@ -> _at_``   | me at example.com  | me@example.com |
+   +-----------------+--------------------+----------------+
+   | Partial         | me@} example[.com  | me@example.com |
+   +-----------------+--------------------+----------------+
+   | Added spaces    | me@example [.] com | me@example.com |
+   +-----------------+--------------------+----------------+
+   | Any combination | me @example [.)com | me@example.com |
+   +-----------------+--------------------+----------------+
 
 For URLs, the following defang techniques are supported:
 
-+-----------------+----------------------------------------------------+-----------------------------+
-| Technique       | Defanged                                           | Refanged                    |
-+=================+====================================================+=============================+
-| ``. -> [.]``    | ``example[.]com/path``                             | ``http://example.com/path`` |
-+-----------------+----------------------------------------------------+-----------------------------+
-| ``. -> (.)``    | ``example(.)com/path``                             | ``http://example.com/path`` |
-+-----------------+----------------------------------------------------+-----------------------------+
-| ``. -> \.``     | ``example\.com/path``                              | ``http://example.com/path`` |
-+-----------------+----------------------------------------------------+-----------------------------+
-| Partial         | ``http://example[.com/path``                       | ``http://example.com/path`` |
-+-----------------+----------------------------------------------------+-----------------------------+
-| ``/ -> [/]``    | ``http://example.com[/]path``                      | ``http://example.com/path`` |
-+-----------------+----------------------------------------------------+-----------------------------+
-| `Cisco ESA`_    | ``http:// example .com /path``                     | ``http://example.com/path`` |
-+-----------------+----------------------------------------------------+-----------------------------+
-| ``:// -> __``   | ``http__example.com/path``                         | ``http://example.com/path`` |
-+-----------------+----------------------------------------------------+-----------------------------+
-| ``hxxp``        | ``hxxp://example.com/path``                        | ``http://example.com/path`` |
-+-----------------+----------------------------------------------------+-----------------------------+
-| Any combination | ``hxxp__ example( .com[/]path``                    | ``http://example.com/path`` |
-+-----------------+----------------------------------------------------+-----------------------------+
-| Hex encoded     | ``687474703a2f2f6578616d706c652e636f6d2f70617468`` | ``http://example.com/path`` |
-+-----------------+----------------------------------------------------+-----------------------------+
-| URL encoded     | ``http%3A%2F%2fexample%2Ecom%2Fpath``              | ``http://example.com/path`` |
-+-----------------+----------------------------------------------------+-----------------------------+
+.. container:: responsive-table
 
-Note that the table above is not exhaustive, and other URL/defang patterns may
+   +-----------------+----------------------------------------------------+-----------------------------+
+   | Technique       | Defanged                                           | Refanged                    |
+   +=================+====================================================+=============================+
+   | ``. -> [.]``    | ``example[.]com/path``                             | ``http://example.com/path`` |
+   +-----------------+----------------------------------------------------+-----------------------------+
+   | ``. -> (.)``    | ``example(.)com/path``                             | ``http://example.com/path`` |
+   +-----------------+----------------------------------------------------+-----------------------------+
+   | ``. -> \.``     | ``example\.com/path``                              | ``http://example.com/path`` |
+   +-----------------+----------------------------------------------------+-----------------------------+
+   | Partial         | ``http://example[.com/path``                       | ``http://example.com/path`` |
+   +-----------------+----------------------------------------------------+-----------------------------+
+   | ``/ -> [/]``    | ``http://example.com[/]path``                      | ``http://example.com/path`` |
+   +-----------------+----------------------------------------------------+-----------------------------+
+   | `Cisco ESA`_    | ``http:// example .com /path``                     | ``http://example.com/path`` |
+   +-----------------+----------------------------------------------------+-----------------------------+
+   | ``:// -> __``   | ``http__example.com/path``                         | ``http://example.com/path`` |
+   +-----------------+----------------------------------------------------+-----------------------------+
+   | ``:// -> :\\``  | ``http:\\example.com/path``                        | ``http://example.com/path`` |
+   +-----------------+----------------------------------------------------+-----------------------------+
+   | ``hxxp``        | ``hxxp://example.com/path``                        | ``http://example.com/path`` |
+   +-----------------+----------------------------------------------------+-----------------------------+
+   | Any combination | ``hxxp__ example( .com[/]path``                    | ``http://example.com/path`` |
+   +-----------------+----------------------------------------------------+-----------------------------+
+   | Hex encoded     | ``687474703a2f2f6578616d706c652e636f6d2f70617468`` | ``http://example.com/path`` |
+   +-----------------+----------------------------------------------------+-----------------------------+
+   | URL encoded     | ``http%3A%2F%2fexample%2Ecom%2Fpath``              | ``http://example.com/path`` |
+   +-----------------+----------------------------------------------------+-----------------------------+
+   | Base64 encoded  | ``aHR0cDovL2V4YW1wbGUuY29tL3BhdGgK``               | ``http://example.com/path`` |
+   +-----------------+----------------------------------------------------+-----------------------------+
+
+Note that the tables above are not exhaustive, and other URL/defang patterns may
 also be extracted correctly. If you notice something missing or not working
 correctly, feel free to let us know via the GitHub Issues_.
+
+The base64 regex was generated with `@deadpixi`_'s `base64 regex tool`_.
+
+Custom Regex
+------------
+
+If you'd like to use the CLI to extract IOCs using your own custom regex, create
+a plain text file with one regex string per line, and pass it in with the
+``--custom-regex`` flag. Be sure each regex string includes exactly one
+`capture group`_. For example:
+
+.. code-block:: text
+
+    http://(example\.com)/
+    (?:https|ftp)://(example\.com)/
+
+This custom regex file will exctract the domain ``example.com`` from matching
+URLs. The ``(?: )`` noncapture group won't be included in matches.
+
+If you would like to extract the entire match, just put parentheses around your
+entire regex string, like this:
+
+.. code-block:: text
+
+    (https?://.*?.com)
+
+If your regex is invalid, you'll see an error message like this:
+
+.. code-block:: text
+
+    Error in custom regex: missing ) at position 5
+
+If your regex does not include a capture group, you'll see an error message
+like this:
+
+.. code-block:: text
+
+    Error in custom regex: no such group
 
 Changelog
 ---------
@@ -243,3 +345,7 @@ released under a "BSD-New" (aka "BSD 3-Clause") license.
 .. _this tweet from @InQuest: https://twitter.com/InQuest/status/969469856931287041
 .. _Cisco ESA: https://www.cisco.com/c/en/us/support/docs/security/email-security-appliance/118775-technote-esa-00.html
 .. _GitHub releases: https://github.com/InQuest/python-iocextract/releases
+.. _appropriate wheel from PyPI: https://pypi.org/project/regex/#files
+.. _@deadpixi: https://github.com/deadpixi
+.. _base64 regex tool: http://www.erlang-factory.com/upload/presentations/225/ErlangFactorySFBay2010-RobKing.pdf
+.. _capture group: https://www.regular-expressions.info/brackets.html
